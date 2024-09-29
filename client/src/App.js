@@ -29,23 +29,23 @@ const App = () => {
         <Route path='/' element={<Home/>} ></Route>
 
         {/* admin Routes */}
-        <Route path='/admin/login' element={<AdminLogin/>}/>
-        <Route path='/admin/dashboard' element={<AdminDashBoard/>} />
-        <Route path='/admin/new-doc' element={<NewDoctor/>} />
-        <Route path='/admin/new-pharm' element={<NewPharmacy/>} />
-        <Route path='/admin/new-recep' element={<NewReceptionist/>} />
+         <Route path='/admin/login' element={<AdminLogin/>}/> {/* done */}
+        <Route path='/admin/dashboard' element={<AdminDashBoard/>} /> {/* done */}
+        <Route path='/admin/new-doc' element={<NewDoctor/>} /> {/* done */}
+        <Route path='/admin/new-pharm' element={<NewPharmacy/>} /> {/* done */}
+        <Route path='/admin/new-recep' element={<NewReceptionist/>} /> {/* done */}
 
         {/* Reception Routes */}
-        <Route path='/reception/login' element={<ReceptionLogin/>} />
-        <Route path='/reception/dashboard' element={<ReceptionSearch/>} />
-        <Route path='/reception/new-case' element={<NewPatient/>} />
-        <Route path='/reception/old-case' element={<NewPrescription/>} />
+        <Route path='/reception/login' element={<ReceptionLogin/>} /> {/* done */}
+        <Route path='/reception/dashboard' element={<ReceptionSearch/>} /> {/* done */}
+        <Route path='/reception/new-case' element={<NewPatient/>} /> {/* done */}
+        <Route path='/reception/old-case/:id' element={<NewPrescription/>} /> {/* done */}
 
         {/* Doctor Routes */}
-        <Route path='/doctor/login' element={<DoctorLogin/>} />
-        <Route path='/doctor/dashboard' element={<DoctorDashboard/>} />
-        <Route path='/doctor/search' element={<DoctorSearch/>} />
-        <Route path='/doctor/analyse' element={<DoctorAnalysis/>} />
+        <Route path='/doctor/login' element={<DoctorLogin/>} /> {/* done */}
+        <Route path='/doctor/dashboard' element={<DoctorDashboard/>} /> {/* done */}
+        <Route path='/doctor/search' element={<DoctorSearch/>} /> {/* done */}
+        <Route path='/doctor/analyse/:id' element={<DoctorAnalysis/>} /> {/* done */}
 
         {/* Pharmacy Routes */}
         <Route path='/pharm/login' element={<PharmacyLogin/>} />

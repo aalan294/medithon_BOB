@@ -65,6 +65,16 @@ const patientLogin = async (req, res) => {
     }
 };
 
+const getPatient = async(req,res)=>{
+    try {
+        const {id} = req.params;
+        const patient = await Patient.findById(id);
+        res.json({message:"patient details fetched successfully",patient: patient,status:true});
+    } catch (error) {
+        res.json({message:"error caught in getAllPatients",status: false})
+    }
+}
+
 
 const getAllPatients = async(req,res)=>{
     try {
@@ -153,7 +163,7 @@ const addHistoryToPatient = async (req, res) => {
         await patient.save();
 
         // Generate the URL for the prescription
-        const prescribUrl = `http://localhost:3000/prescrib/${prescriptionId}`;
+        const prescribUrl = `http://localhost:3000/pharm/scanner/${prescriptionId}`;
 
         // Generate the QR code
         const qrCodeDataUrl = await generateQRCode(prescribUrl);
@@ -169,4 +179,4 @@ const addHistoryToPatient = async (req, res) => {
     }
 };
 
-module.exports = { registerPatient, getAllPatients, addHistoryToPatient, patientLogin };
+module.exports = { registerPatient, getAllPatients, addHistoryToPatient, patientLogin ,getPatient};

@@ -3,27 +3,37 @@ const Pharmacy = require('../MODELS/pharmacySchema');
 const Reception = require('../MODELS/receptionSchema');
 const bcrypt = require('bcrypt')
 
-const registerDoctor = async(req,res)=>{
+const registerDoctor = async (req, res) => {
     try {
-        const {name, email, phone, address, wallet, hospital, verification,dept} = req.body;
-        if(!name || !email  || !phone || !address || !wallet || !hospital || !verification || !dept){
-            res.json({message: "fields missing",status: false});
+        const { name, email, phone, address, wallet, hospital, verification, dept } = req.body;
+
+        // Check for missing fields
+        if (!name || !email || !phone || !address || !wallet || !hospital || !verification || !dept) {
+            return res.json({ message: "fields missing", status: false });
         }
-        const existingDoctor = await Doctor.findOne({email});
-        if(existingDoctor){
-            res.json({message: "Doctor already exists",status: false});
+
+        // Check if the doctor already exists
+        const existingDoctor = await Doctor.findOne({ email });
+        if (existingDoctor) {
+            return res.json({ message: "Doctor already exists", status: false });
         }
+
+        // Hash the password and create a new doctor
         const hashedPassword = await bcrypt.hash(email, 10);
         const doctor = new Doctor({
-            name, email, password: hashedPassword, phone, address, wallet, hospital, verification,dept
-        })
+            name, email, password: hashedPassword, phone, address, wallet, hospital, verification, dept
+        });
+
+        // Save the doctor to the database
         const response = await doctor.save();
-        res.json({message: "Doctor registered successfully", id:response._id ,status: true});
+        return res.json({ message: "Doctor registered successfully", id: response._id, status: true });
+
     } catch (error) {
-        console.log(error.message)
-        res.json({message:"error accured in registering Doctor", status: false})
+        console.log(error.message);
+        return res.json({ message: "error occurred in registering Doctor", status: false });
     }
-}
+};
+
 
 const registerReception = async(req,res)=>{
     try {

@@ -4,7 +4,7 @@ import Web3 from 'web3';
 import { useNavigate } from 'react-router-dom';
 import {abi} from '../../abi';  // Import the ABI from the abi.js file
 
-const contractAddress = '0xa685D7a2A976865179bDB2844CC33DeDd16f11b2'; // Your contract address
+const contractAddress = '0x2Ea64dAc8cd5E51E75c3273C2F8C152218002cE5'; // Your contract address
 
 const AdminLogin = () => {
     const [user, setUser] = useState(null);

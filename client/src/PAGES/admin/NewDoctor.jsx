@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import Web3 from 'web3';
 import { pinata } from '../../config';
 import api from '../../API/api';
+import { abi } from '../../abi';
 
 // Styled Components for blue and white theme
 const FormContainer = styled.div`
@@ -83,6 +85,7 @@ const SuccessMessage = styled.p`
 `;
 
 const NewDoctor = () => {
+  const contractAddress = '0x2Ea64dAc8cd5E51E75c3273C2F8C152218002cE5';
   const [doctorData, setDoctorData] = useState({
     name: '',
     email: '',
@@ -108,11 +111,8 @@ const NewDoctor = () => {
 
   const handleFileUpload = async () => {
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const response = await pinata.pinFileToIPFS(formData); // Pin the file to IPFS
-      const cid = response.data.IpfsHash; // Get the IPFS CID
+      const response = await pinata.upload.file(selectedFile);
+      const cid = response.cid;
 
       setDoctorData({ ...doctorData, verification: cid });
       console.log('CID:', cid);
@@ -127,11 +127,15 @@ const NewDoctor = () => {
     setSuccess('');
 
     try {
-      const response = await api.post('/admin/new-doc', doctorData);
+      // Step 1: Register doctor in the backend
+      const response = await api.post('/admin/reg-doc', doctorData);
 
       if (response.data.status) {
         const { id } = response.data;
         console.log('Doctor ID:', id);
+
+        // Step 2: Call smart contract function
+        await registerDoctorOnBlockchain(id, doctorData);
 
         setSuccess('Doctor registered successfully!');
         setDoctorData({
@@ -145,6 +149,7 @@ const NewDoctor = () => {
           dept: ''
         });
 
+        // Redirect to dashboard
         window.location.href = '/admin/dashboard';
       } else {
         setError(response.data.message);
@@ -153,6 +158,44 @@ const NewDoctor = () => {
       setError('Error occurred while registering the doctor');
       console.error('Error:', error);
     }
+  };
+
+  const registerDoctorOnBlockchain = async (doctorId, doctorData) => {
+    try {
+      // Ensure Web3 is available and get the user's wallet address
+      const web3 = new Web3(window.ethereum);
+      await window.ethereum.enable();
+      const accounts = await web3.eth.getAccounts();
+
+      // Get the contract instance
+      const contract = new web3.eth.Contract(abi, contractAddress);
+
+      // Determine the enum value for the department
+      const deptEnum = getDepartmentEnumValue(doctorData.dept);
+
+      // Call the smart contract function
+      await contract.methods
+        .registerDoctor(doctorData.wallet, doctorId, doctorData.verification, deptEnum)
+        .send({ from: accounts[0] });
+
+      console.log('Doctor registered on blockchain successfully!');
+      alert("successsfull")
+    } catch (error) {
+      setError('Error occurred while registering the doctor on the blockchain');
+      console.error('Blockchain Error:', error);
+    }
+  };
+
+  // Function to map department names to enum values
+  const getDepartmentEnumValue = (dept) => {
+    const departments = {
+      "Cardiology": 0,
+      "Neurology": 1,
+      "Oncology": 2,
+      "Pediatrics": 3,
+      // Add more mappings as needed
+    };
+    return departments[dept] ?? 0; // Default to 0 if department is not found
   };
 
   return (
@@ -236,16 +279,31 @@ const NewDoctor = () => {
         </InputGroup>
 
         <InputGroup>
-          <Label>Department</Label>
-          <Input
-            type="text"
-            name="dept"
-            value={doctorData.dept}
-            onChange={handleInputChange}
-            placeholder="Enter department"
-            required
-          />
-        </InputGroup>
+  <Label>Department</Label>
+  <select
+    name="dept"
+    value={doctorData.dept}
+    onChange={handleInputChange}
+    required
+    style={{
+      width: '100%',
+      padding: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '5px',
+      backgroundColor: '#f9f9f9',
+      fontSize: '16px',
+      color: '#333',
+    }}
+  >
+    <option value="" disabled>Select department</option>
+    <option value="Cardiology">Cardiology</option>
+    <option value="Neurology">Neurology</option>
+    <option value="Oncology">Oncology</option>
+    <option value="Pediatrics">Pediatrics</option>
+    {/* Add more options here */}
+  </select>
+</InputGroup>
+
 
         <InputGroup>
           <Label>Verification Document (MBBS Certificate, Joining Letter)</Label>
