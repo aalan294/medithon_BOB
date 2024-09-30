@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Web3 from 'web3';
-import {abi} from '../../abi'
-// Smart contract details (replace with your actual contract ABI and address)
-const contractAddress = '0x2Ea64dAc8cd5E51E75c3273C2F8C152218002cE5'; // Replace with your contract address
+import styled from 'styled-components';
+import { abi } from '../../abi';
+import { pinata } from '../../config';
 
+const contractAddress = '0x2Ea64dAc8cd5E51E75c3273C2F8C152218002cE5'; // Replace with your contract address
 
 const ScannerLogin = () => {
   const { id } = useParams(); // Get the prescription ID from the URL
@@ -14,6 +15,7 @@ const ScannerLogin = () => {
   const [prescription, setPrescription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFulfilled, setIsFulfilled] = useState(false);
+  const [url, setUrl] = useState('');
 
   // Initialize Web3 and contract instance
   useEffect(() => {
@@ -21,13 +23,13 @@ const ScannerLogin = () => {
       if (window.ethereum) {
         const web3Instance = new Web3(window.ethereum);
         try {
-          await window.ethereum.request({ method: 'eth_requestAccounts' }); // Request access to accounts
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
           const accounts = await web3Instance.eth.getAccounts();
           const contractInstance = new web3Instance.eth.Contract(abi, contractAddress);
 
           setWeb3(web3Instance);
           setContract(contractInstance);
-          setAccount(accounts[0]); // Set the user's account
+          setAccount(accounts[0]);
         } catch (error) {
           console.error('Error connecting to MetaMask:', error);
         }
@@ -48,15 +50,21 @@ const ScannerLogin = () => {
           setPrescription({
             prescriptionId: prescriptionData[0].toString(),
             userId: prescriptionData[1],
-            timestamp: new Date(parseInt(prescriptionData[2]) * 1000), // Convert Unix timestamp
+            timestamp: new Date(parseInt(prescriptionData[2]) * 1000),
             description: prescriptionData[3],
             dept: prescriptionData[4].toString(),
             medicines: prescriptionData[5],
             documents: prescriptionData[6],
             allergies: prescriptionData[7],
-            isFulfilled: prescriptionData[8]
+            isFulfilled: prescriptionData[8],
           });
-          setIsFulfilled(prescriptionData[8]); // Track if the prescription is already fulfilled
+          setIsFulfilled(prescriptionData[8]);
+
+          const signedUrl = await pinata.gateways.createSignedURL({
+            cid: 'bafybeifocbigpbnlup47txhxvbe5fny6epj43oru6g4etg2z635rr3xewy',
+            expires: 60000,
+          });
+          setUrl(signedUrl);
         } catch (error) {
           console.error('Error fetching prescription:', error);
         } finally {
@@ -74,7 +82,7 @@ const ScannerLogin = () => {
       try {
         await contract.methods.fulfillPrescription(id).send({ from: account });
         alert('Prescription fulfilled successfully.');
-        setIsFulfilled(true); // Update state to show that the prescription is fulfilled
+        setIsFulfilled(true);
       } catch (error) {
         console.error('Error fulfilling prescription:', error);
         alert('Error fulfilling prescription. Make sure you have the correct role and are connected to the network.');
@@ -83,56 +91,167 @@ const ScannerLogin = () => {
   };
 
   if (loading) {
-    return <div>Loading prescription details...</div>;
+    return <LoadingMessage>Loading prescription details...</LoadingMessage>;
   }
 
   if (!prescription) {
-    return <div>Prescription not found.</div>;
+    return <ErrorMessage>Prescription not found.</ErrorMessage>;
   }
 
   return (
-    <div>
-      <h2>Prescription Details for ID: {prescription.prescriptionId}</h2>
-      <div>
-        <strong>User ID:</strong> {prescription.userId}
-      </div>
-      <div>
-        <strong>Timestamp:</strong> {prescription.timestamp.toString()}
-      </div>
-      <div>
-        <strong>Description:</strong> {prescription.description}
-      </div>
-      <div>
-        <strong>Department:</strong> {prescription.dept}
-      </div>
-      <div>
-        <strong>Medicines:</strong> {prescription.medicines.join(', ')}
-      </div>
-      <div>
-        <strong>Allergies:</strong> {prescription.allergies.length > 0 ? prescription.allergies.join(', ') : 'None'}
-      </div>
-      <div>
-        <strong>Documents:</strong> 
-        <ul>
-          {prescription.documents.map((doc, index) => (
-            <li key={index}>
-              <a href={`https://ipfs.io/ipfs/${doc}`} target="_blank" rel="noopener noreferrer">
-                Document {index + 1}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <strong>Status:</strong> {isFulfilled ? 'Fulfilled' : 'Not Fulfilled'}
-      </div>
+    <Container>
+      <Card>
+        <Title>Prescription Details</Title>
 
-      {/* Fulfill Prescription Button */}
-      {!isFulfilled && (
-        <button onClick={fulfillPrescription}>Update Prescription as Fulfilled</button>
-      )}
-    </div>
+        <Grid>
+          <div>
+            <Label>Prescription ID:</Label> {prescription.prescriptionId}
+          </div>
+          <div>
+            <Label>User ID:</Label> {prescription.userId}
+          </div>
+          <div>
+            <Label>Timestamp:</Label> {prescription.timestamp.toString()}
+          </div>
+          <div>
+            <Label>Department:</Label> {prescription.dept}
+          </div>
+        </Grid>
+
+        <Section>
+          <Label>Description:</Label>
+          <Text>{prescription.description}</Text>
+        </Section>
+
+        <Section>
+          <Label>Medicines:</Label>
+          <Text>{prescription.medicines.join(', ')}</Text>
+        </Section>
+
+        <Section>
+          <Label>Allergies:</Label>
+          <Text>{prescription.allergies.length > 0 ? prescription.allergies.join(', ') : 'None'}</Text>
+        </Section>
+
+        <Section>
+          <Label>Documents:</Label>
+          <DocumentList>
+            {prescription.documents.map((doc, index) => (
+              <li key={index}>
+                <DocumentLink href={url} target="_blank" rel="noopener noreferrer">
+                  Document {index + 1}
+                </DocumentLink>
+              </li>
+            ))}
+          </DocumentList>
+        </Section>
+
+        <Section>
+          <Label>Status:</Label>
+          <Text status={isFulfilled}>{isFulfilled ? 'Fulfilled' : 'Not Fulfilled'}</Text>
+        </Section>
+
+        {!isFulfilled && (
+          <ButtonWrapper>
+            <FulfillButton onClick={fulfillPrescription}>Update Prescription as Fulfilled</FulfillButton>
+          </ButtonWrapper>
+        )}
+      </Card>
+    </Container>
   );
 };
 
 export default ScannerLogin;
+
+// Styled Components
+const Container = styled.div`
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, #ebf8ff, #ffffff);
+  padding: 2rem;
+`;
+
+const Card = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 768px;
+`;
+
+const Title = styled.h2`
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  color: #3182ce;
+  margin-bottom: 1.5rem;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const Label = styled.strong`
+  display: block;
+  color: #4a5568;
+`;
+
+const Section = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const Text = styled.p`
+  color: ${({ status }) => (status ? '#38a169' : '#e53e3e')};
+  margin-top: 0.5rem;
+`;
+
+const DocumentList = styled.ul`
+  list-style: disc;
+  margin-top: 0.5rem;
+  padding-left: 1.5rem;
+`;
+
+const DocumentLink = styled.a`
+  color: #3182ce;
+  text-decoration: underline;
+  &:hover {
+    text-decoration: none;
+  }
+`;
+
+const ButtonWrapper = styled.div`
+  text-align: center;
+  margin-top: 2rem;
+`;
+
+const FulfillButton = styled.button`
+  background-color: #3182ce;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  &:hover {
+    background-color: #2b6cb0;
+  }
+  transition: background-color 0.3s;
+`;
+
+const LoadingMessage = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.5rem;
+`;
+
+const ErrorMessage = styled(LoadingMessage)`
+  color: red;
+`;
